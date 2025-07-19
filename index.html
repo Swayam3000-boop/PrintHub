@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintHub - 3D Printing Marketplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #chatbotMessages::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chatbotMessages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        #chatbotMessages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        #chatbotMessages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        .category-tag {
+            transition: all 0.3s ease;
+        }
+        .category-tag:hover {
+            transform: scale(1.1);
+            background-color: #4F46E5;
+        }
+        #uploadModal, #loginModal {
+            transition: all 0.3s ease;
+        }
+        .modal-hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+        }
+        .modal-visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        #searchFilters {
+            transition: all 0.3s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+        #searchFilters.expanded {
+            max-height: 500px;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .price-range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #d1d5db;
+            outline: none;
+        }
+        .price-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4F46E5;
+            cursor: pointer;
+        }
+        
+        /* Updated Search Bar Styles */
+        .search-container {
+            background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+        }
+        .search-input {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .search-input:focus {
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .search-btn {
+            background-color: #4F46E5;
+        }
+        .search-btn:hover {
+            background-color: #4338CA;
+        }
+        .filter-toggle {
+            color: white;
+        }
+        .filter-toggle:hover {
+            color: #E0E7FF;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-cube text-2xl"></i>
+                <span class="text-xl font-bold">PrintHub</span>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#featuredDesigns" id="browseLink" class="hover:text-gray-200 font-medium">Browse</a>
+                <a href="#uploadModal" id="sellLink" class="hover:text-gray-200 font-medium">Sell</a>
+                <a href="#community" id="communityLink" class="hover:text-gray-200 font-medium">Community</a>
+                <a href="#resources" id="resourcesLink" class="hover:text-gray-200 font-medium">Resources</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="loginBtn" class="bg-white text-blue-600 px-4 py-2 rounded-full font-medium hover:bg-gray-100 transition">Sign In</button>
+                <button id="uploadBtn" class="hidden md:block bg-blue-600 text-white px-4 py-2 rounded-full font-medium hover:bg-blue-700 transition">Upload Design</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Search Bar -->
+    <div class="search-container shadow-md">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center">
+                <div class="relative flex-1">
+                    <input type="text" id="searchInput" placeholder="Search for 3D models..." 
+                           class="search-input w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                    <button id="filterToggle" class="filter-toggle absolute right-3 top-2 hover:text-blue-200">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+                </div>
+                <button id="searchBtn" class="search-btn ml-2 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+                    Search
+                </button>
+            </div>
+            
+            <!-- Search Filters (hidden by default) -->
+            <div id="searchFilters" class="bg-white rounded-lg mt-2">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Category Filter -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Category</label>
+                        <select id="filterCategory" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Categories</option>
+                            <option value="toys">Toys & Games</option>
+                            <option value="home">Home & Garden</option>
+                            <option value="jewelry">Jewelry</option>
+                            <option value="auto">Auto Parts</option>
+                            <option value="robotics">Robotics</option>
+                            <option value="art">Art</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Price Range Filter -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Price Range</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="minPrice" placeholder="Min" class="w-1/2 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span>to</span>
+                            <input type="number" id="maxPrice" placeholder="Max" class="w-1/2 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <input type="range" id="priceRange" min="0" max="1000" step="10" value="1000" class="price-range-slider mt-2">
+                        <div class="text-sm text-gray-600 text-right">Max: ₹<span id="priceRangeValue">1000</span></div>
+                    </div>
+                    
+                    <!-- Rating Filter -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Minimum Rating</label>
+                        <select id="filterRating" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="0">Any Rating</option>
+                            <option value="3">3+ Stars</option>
+                            <option value="4">4+ Stars</option>
+                            <option value="4.5">4.5+ Stars</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort By -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Sort By</label>
+                        <select id="filterSort" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="popular">Most Popular</option>
+                            <option value="newest">Newest</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="rating">Highest Rated</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Additional Filters -->
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="filterFree" class="mr-2">
+                        <label for="filterFree" class="text-gray-700">Free Only</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="filterPrintable" class="mr-2" checked>
+                        <label for="filterPrintable" class="text-gray-700">Printable</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="filterParametric" class="mr-2">
+                        <label for="filterParametric" class="text-gray-700">Parametric</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="filterSupported" class="mr-2">
+                        <label for="filterSupported" class="text-gray-700">Supported</label>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-end">
+                    <button id="resetFilters" class="text-gray-600 hover:text-blue-600 mr-4">Reset Filters</button>
+                    <button id="applyFilters" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white pb-20 pt-16">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-10 md:mb-0">
+                <h1 class="text-4xl md:text-5xl font-bold mb-6">Discover & Share 3D Printing Designs</h1>
+                <p class="text-xl mb-8">Join the largest marketplace for 3D printable models. Sell your creations or find the perfect design for your next project.</p>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button id="exploreBtn" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition">Explore Designs</button>
+                    <button id="heroUploadBtn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition">Start Selling</button>
+                </div>
+            </div>
+            <div class="md:w-1/2 flex justify-center animate-float">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/d12d2a72-2d76-4b1c-9a17-6d35bad6beb5.png" alt="3D printer creating complex geometric design with colorful filament" class="rounded-lg shadow-2xl">
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Designs Section -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Featured Designs</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" id="featuredDesigns">
+                <!-- Designs will be loaded here by JavaScript -->
+            </div>
+            <div class="text-center mt-10">
+                <button id="loadMoreBtn" class="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-bold hover:bg-gray-300 transition">Load More Designs</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Popular Categories</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                <button class="category-tag bg-white py-3 px-4 rounded-lg shadow-sm hover:shadow-md text-center font-medium">Toys & Games</button>
+                <button class="category-tag bg-white py-3 px-4 rounded-lg shadow-sm hover:shadow-md text-center font-medium">Home & Garden</button>
+                <button class="category-tag bg-white py-3 px-4 rounded-lg shadow-sm hover:shadow-md text-center font-medium">Jewelry</button>
+                <button class="category-tag bg-white py-3 px-4 rounded-lg shadow-sm hover:shadow-md text-center font-medium">Auto Parts</button>
+                <button class="category-tag bg-white py-3 px-4 rounded-lg shadow-sm hover:shadow-md text-center font-medium">Robotics</button>
+                <button class="category-tag bg-white py-3 px-4 rounded-lg shadow-sm hover:shadow-md text-center font-medium">Art</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">How PrintHub Works</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center p-6">
+                    <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-search text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Browse Designs</h3>
+                    <p class="text-gray-600">Discover thousands of 3D printable objects from talented designers worldwide.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-shopping-cart text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Purchase or Download</h3>
+                    <p class="text-gray-600">Buy premium designs or download free models for your personal use.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-upload text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Sell Your Designs</h3>
+                    <p class="text-gray-600">Upload your 3D models and earn money from the global community.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">What Our Community Says</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center mb-4">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/03c2a4ea-c868-4af2-bc5c-46505339bf05.png" alt="Sarah J., Industrial Designer" class="rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold">Sarah J.</h4>
+                            <p class="text-gray-600">Industrial Designer</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700">"PrintHub has completely transformed how I distribute my designs. I've earned over $5,000 in passive income from models I created in my spare time."</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center mb-4">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/b965b3a9-a296-4476-919e-e2410f70a130.png" alt="Mark T., Hobbyist" class="rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold">Mark T.</h4>
+                            <p class="text-gray-600">Hobbyist</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700">"As someone new to 3D printing, the quality designs on PrintHub helped me avoid frustration and quickly get great results with my printer."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 modal-hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-xl font-bold">Upload New Design</h3>
+                <button id="closeUploadModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <form id="uploadForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Design Title</label>
+                        <input type="text" id="designTitle" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Description</label>
+                        <textarea id="designDescription" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Category</label>
+                        <select id="designCategory" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="toys">Toys & Games</option>
+                            <option value="home">Home & Garden</option>
+                            <option value="jewelry">Jewelry</option>
+                            <option value="auto">Auto Parts</option>
+                            <option value="robotics">Robotics</option>
+                            <option value="art">Art</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Price (₹)</label>
+                        <input type="number" id="designPrice" min="0" step="10" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Design Files</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer" onclick="document.getElementById('designFiles').click()">
+                            <i class="fas fa-upload text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-500">Click to select STL files</p>
+                            <input type="file" id="designFiles" class="hidden" multiple>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelUpload" class="px-4 py-2 border rounded-lg font-medium hover:bg-gray-100">Cancel</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">Submit Design</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 modal-hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-xl font-bold">Sign In to PrintHub</h3>
+                <button id="closeLoginModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <form id="loginForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Email</label>
+                        <input type="email" id="loginEmail" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Password</label>
+                        <input type="password" id="loginPassword" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex items-center mb-4">
+                        <input type="checkbox" id="rememberMe" class="mr-2">
+                        <label for="rememberMe" class="text-gray-700">Remember me</label>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelLogin" class="px-4 py-2 border rounded-lg font-medium hover:bg-gray-100">Cancel</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">Sign In</button>
+                    </div>
+                </form>
+                <div class="text-center mt-4">
+                    <a href="#" class="text-blue-600 hover:underline">Forgot password?</a>
+                    <p class="mt-2 text-gray-600">Don't have an account? <a href="#" id="showRegister" class="text-blue-600 hover:underline">Sign up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 modal-hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-xl font-bold">Create Account</h3>
+                <button id="closeRegisterModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <form id="registerForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Full Name</label>
+                        <input type="text" id="registerName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Email</label>
+                        <input type="email" id="registerEmail" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Password</label>
+                        <input type="password" id="registerPassword" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Confirm Password</label>
+                        <input type="password" id="registerConfirmPassword" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex items-center mb-4">
+                        <input type="checkbox" id="agreeTerms" class="mr-2" required>
+                        <label for="agreeTerms" class="text-gray-700">I agree to the <a href="#" class="text-blue-600 hover:underline">Terms of Service</a></label>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelRegister" class="px-4 py-2 border rounded-lg font-medium hover:bg-gray-100">Cancel</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div id="successToast" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden transition-all duration-300 transform translate-y-10">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-3"></i>
+            <span id="successMessage">Operation completed successfully!</span>
+        </div>
+    </div>
+
+    <!-- Community Section -->
+    <section id="community" class="py-16 bg-gray-100 hidden">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-6">Community Forum</h2>
+            <p class="text-gray-600 mb-8">Coming soon! Join our growing community of 3D printing enthusiasts.</p>
+            <a href="#" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">Join Discord Community</a>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources" class="py-16 bg-white hidden">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Resources</h2>
+            <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">Beginner's Guide</h3>
+                    <p class="text-gray-600">Learn the basics of 3D printing and get started with your first print.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">Design Tips</h3>
+                    <p class="text-gray-600">Professional advice for creating print-ready 3D models.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">Troubleshooting</h3>
+                    <p class="text-gray-600">Solutions to common 3D printing problems.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Section -->
+    <section id="community" class="py-16 bg-gray-100 hidden">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-6">Community Forum</h2>
+            <p class="text-gray-600 mb-8">Coming soon! Join our growing community of 3D printing enthusiasts.</p>
+            <a href="#" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">Join Discord Community</a>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources" class="py-16 bg-white hidden">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Resources</h2>
+            <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">Beginner's Guide</h3>
+                    <p class="text-gray-600">Learn the basics of 3D printing and get started with your first print.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">Design Tips</h3>
+                    <p class="text-gray-600">Professional advice for creating print-ready 3D models.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">Troubleshooting</h3>
+                    <p class="text-gray-6">Solutions to common 3D printing problems.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chatbot Button -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <button id="chatbotBtn" class="bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center justify-center">
+            <i class="fas fa-robot text-2xl"></i>
+        </button>
+    </div>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbotModal" class="fixed bottom-24 right-6 w-80 bg-white rounded-lg shadow-xl z-50 hidden flex flex-col" style="height: 400px;">
+        <div class="bg-blue-600 text-white p-3 rounded-t-lg flex justify-between items-center">
+            <h3 class="font-bold">PrintHub Assistant</h3>
+            <button id="closeChatbot" class="text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="chatbotMessages" class="flex-1 p-3 overflow-y-auto">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="p-3 border-t">
+            <form id="chatbotForm" class="flex">
+                <input type="text" id="chatbotInput" placeholder="Ask about printing..." class="flex-1 border rounded-l-lg px-3 py-2 focus:outline-none">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">PrintHub</h3>
+                    <p class="text-gray-400">The premier marketplace for 3D printing enthusiasts and professionals.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Marketplace</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Browse Designs</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Sell Designs</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Top Creators</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Categories</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Community</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Forum</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Challenges</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Events</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Support</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact Us</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>© 2023 PrintHub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mock database for designs
+        const designsDatabase = {
+            designs: [
+                {
+                    id: 1,
+                    title: "Modular Robot Kit",
+                    description: "Fully articulated robot with interchangeable parts for endless customization.",
+                    category: "toys",
+                    price: 299,
+                    rating: 4.8,
+                    downloads: 1245,
+                    image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/0c0f8818-d24c-4d33-a3fd-2067f4d06c37.png",
+                    dateAdded: new Date('2023-05-15'),
+                    printable: true,
+                    parametric: true,
+                    supported: false
+                },
+                {
+                    id: 2,
+                    title: "Geometric Planter",
+                    description: "Modern hexagonal plant pot with self-watering system and drainage.",
+                    category: "home",
+                    price: 199,
+                    rating: 4.6,
+                    downloads: 876,
+                    image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/8ce5fde3-a3f1-4954-9ed2-3bd00549ab87.png",
+                    dateAdded: new Date('2023-06-22'),
+                    printable: true,
+                    parametric: false,
+                    supported: true
+                },
+                {
+                    id: 3,
+                    title: "Interlocking Bracelet",
+                    description: "Customizable parametric design bracelet with multiple size options.",
+                    category: "jewelry",
+                    price: 249,
+                    rating: 4.7,
+                    downloads: 532,
+                    image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/ddd393c8-db6c-4be1-9a84-fce98ece4db7.png",
+                    dateAdded: new Date('2023-04-10'),
+                    printable: true,
+                    parametric: true,
+                    supported: false
+                },
+                {
+                    id: 4,
+                    title: "Car Phone Mount",
+                    description: "Universal phone holder with adjustable grip fits most car dashboards.",
+                    category: "auto",
+                    price: 349,
+                    rating: 4.5,
+                    downloads: 1203,
+                    image: "https://www.cnet.com/a/img/resize/8a90f56aae8d2ef06d19967dc13a804c0d71fa0a/hub/2018/06/19/dbcf19de-5809-4898-bd70-f25092803f3d/mpow-universal-dashboard-mount.jpg?auto=webp&fit=crop&height=1200&width=1200",
+                    dateAdded: new Date('2023-07-05'),
+                    printable: true,
+                    parametric: false,
+                    supported: true
+                },
+                {
+                    id: 5,
+                    title: "Quadcopter Frame",
+                    description: "Lightweight yet durable drone frame with protected motor mounts.",
+                    category: "robotics",
+                    price: 599,
+                    rating: 4.9,
+                    downloads: 342,
+                    image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/8621fab6-511f-4e46-bea1-f20b6f6af3f8.png",
+                    dateAdded: new Date('2023-03-18'),
+                    printable: true,
+                    parametric: true,
+                    supported: true
+                },
+                {
+                    id: 6,
+                    title: "Abstract Sculpture",
+                    description: "Modern art piece with complex geometry perfect for display or gifts.",
+                    category: "art",
+                    price: 399,
+                    rating: 4.4,
+                    downloads: 210,
+                    image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/a8ce1770-bbe8-4a90-a89e-843902a4281f.png",
+                    dateAdded: new Date('2023-06-30'),
+                    printable: true,
+                    parametric: false,
+                    supported: false
+                },
+                {
+                    id: 7,
+                    title: "Steampunk Goggles",
+                    description: "Fantasy-style goggles with adjustable head strap and decorative lenses.",
+                    category: "toys",
+                    price: 249,
+                    rating: 4.3,
+                    downloads: 789,
+                    image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/6f5ddf7d-ef85-4e4c-9b25-81e38d3cf941.png",
+                    dateAdded: new Date('2023-05-28'),
+                    printable: true,
+                    parametric: false,
+                    supported: true
+                },
+                {
+                    id: 8,
+                    title: "Drawer Organizer",
+                    description: "Customizable compartment system for kitchen utensils or office supplies.",
+                    category: "home",
+                    price: 199,
+                    rating: 4.2,
+                    downloads: 954,
+                    image: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c97fb399-41d0-4008-90df-2f15ee6f3dfb.png",
+                    dateAdded: new Date('2023-07-12'),
+                    printable: true,
+                    parametric: true,
+                    supported: true
+                }
+            ],
+            nextId: 9,
+
+            // Mock user data
+            users: [
+                {
+                    email: "user@example.com",
+                    password: "password123",
+                    name: "Rahul Sharma",
+                    designs: [1, 3, 5] // IDs of designs they've uploaded
+                }
+            ],
+            currentUser: null,
+
+            // Backend functions
+            addDesign: function(design) {
+                design.id = this.nextId++;
+                this.designs.push(design);
+                return design;
+            },
+
+            login: function(email, password) {
+                const user = this.users.find(u => u.email === email && u.password === password);
+                if (user) {
+                    this.currentUser = user;
+                    return { success: true, user };
+                }
+                return { success: false, message: "Invalid email or password" };
+            },
+
+            register: function(name, email, password) {
+                if (this.users.some(u => u.email === email)) {
+                    return { success: false, message: "Email already registered" };
+                }
+                const newUser = { name, email, password, designs: [] };
+                this.users.push(newUser);
+                this.currentUser = newUser;
+                return { success: true, user: newUser };
+            }
+        };
+
+        // DOM Elements
+        const featuredDesignsContainer = document.getElementById('featuredDesigns');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const heroUploadBtn = document.getElementById('heroUploadBtn');
+        const sellLink = document.getElementById('sellLink');
+        const loginBtn = document.getElementById('loginBtn');
+        const exploreBtn = document.getElementById('exploreBtn');
+        const uploadModal = document.getElementById('uploadModal');
+        const loginModal = document.getElementById('loginModal');
+        const registerModal = document.getElementById('registerModal');
+        const successToast = document.getElementById('successToast');
+
+        // Search elements
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const filterToggle = document.getElementById('filterToggle');
+        const searchFilters = document.getElementById('searchFilters');
+        const filterCategory = document.getElementById('filterCategory');
+        const minPrice = document.getElementById('minPrice');
+        const maxPrice = document.getElementById('maxPrice');
+        const priceRange = document.getElementById('priceRange');
+        const priceRangeValue = document.getElementById('priceRangeValue');
+        const filterRating = document.getElementById('filterRating');
+        const filterSort = document.getElementById('filterSort');
+        const filterFree = document.getElementById('filterFree');
+        const filterPrintable = document.getElementById('filterPrintable');
+        const filterParametric = document.getElementById('filterParametric');
+        const filterSupported = document.getElementById('filterSupported');
+        const applyFilters = document.getElementById('applyFilters');
+        const resetFilters = document.getElementById('resetFilters');
+
+        // Form elements
+        const uploadForm = document.getElementById('uploadForm');
+        const designFilesInput = document.getElementById('designFiles');
+        
+        // Handle file uploads and click-to-browse
+        designFilesInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            const uploadArea = document.querySelector('.border-dashed');
+            
+            // Clear previous file list
+            const prevFileList = uploadArea.querySelector('.file-list');
+            if (prevFileList) {
+                uploadArea.removeChild(prevFileList);
+            }
+            
+            if (files.length > 0) {
+                const fileList = document.createElement('div');
+                fileList.className = 'mt-2 text-sm text-gray-700 file-list';
+                fileList.textContent = `Selected ${files.length} file(s): ${Array.from(files).map(f => f.name).join(', ')}`;
+                uploadArea.appendChild(fileList);
+            }
+        });
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+
+        // Close buttons
+        const closeUploadModal = document.getElementById('closeUploadModal');
+        const closeLoginModal = document.getElementById('closeLoginModal');
+        const closeRegisterModal = document.getElementById('closeRegisterModal');
+        const cancelUpload = document.getElementById('cancelUpload');
+        const cancelLogin = document.getElementById('cancelLogin');
+        const cancelRegister = document.getElementById('cancelRegister');
+
+        // Other interactive elements
+        const showRegister = document.getElementById('showRegister');
+
+        // Variables
+        let displayedDesignCount = 4;
+        const designsPerLoad = 4;
+        let currentFilters = {
+            searchTerm: '',
+            category: '',
+            minPrice: 0,
+            maxPrice: 1000,
+            rating: 0,
+            sort: 'popular',
+            freeOnly: false,
+            printable: true,
+            parametric: false,
+            supported: false
+        };
+
+        // Functions
+        function filterDesigns() {
+            return designsDatabase.designs.filter(design => {
+                // Search term filter
+                if (currentFilters.searchTerm && 
+                    !design.title.toLowerCase().includes(currentFilters.searchTerm.toLowerCase()) &&
+                    !design.description.toLowerCase().includes(currentFilters.searchTerm.toLowerCase())) {
+                    return false;
+                }
+                
+                // Category filter
+                if (currentFilters.category && design.category !== currentFilters.category) {
+                    return false;
+                }
+                
+                // Price filter
+                if (design.price < currentFilters.minPrice || design.price > currentFilters.maxPrice) {
+                    return false;
+                }
+                
+                // Rating filter
+                if (design.rating < currentFilters.rating) {
+                    return false;
+                }
+                
+                // Free only filter
+                if (currentFilters.freeOnly && design.price > 0) {
+                    return false;
+                }
+                
+                // Printable filter
+                if (currentFilters.printable && !design.printable) {
+                    return false;
+                }
+                
+                // Parametric filter
+                if (currentFilters.parametric && !design.parametric) {
+                    return false;
+                }
+                
+                // Supported filter
+                if (currentFilters.supported && !design.supported) {
+                    return false;
+                }
+                
+                return true;
+            }).sort((a, b) => {
+                // Sorting logic
+                switch(currentFilters.sort) {
+                    case 'newest':
+                        return b.dateAdded - a.dateAdded;
+                    case 'price_asc':
+                        return a.price - b.price;
+                    case 'price_desc':
+                        return b.price - a.price;
+                    case 'rating':
+                        return b.rating - a.rating;
+                    case 'popular':
+                    default:
+                        return b.downloads - a.downloads;
+                }
+            });
+        }
+
+        function renderDesigns() {
+            featuredDesignsContainer.innerHTML = '';
+            const filteredDesigns = filterDesigns();
+            const designsToShow = filteredDesigns.slice(0, displayedDesignCount);
+            
+            if (designsToShow.length === 0) {
+                featuredDesignsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-10">
+                        <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">No designs found</h3>
+                        <p class="text-gray-600">Try adjusting your search or filters</p>
+                    </div>
+                `;
+                loadMoreBtn.classList.add('hidden');
+                return;
+            }
+            
+            designsToShow.forEach(design => {
+                const designCard = document.createElement('div');
+                designCard.className = 'bg-white rounded-lg overflow-hidden shadow-md card-hover transition duration-300';
+                designCard.innerHTML = `
+                    <div class="relative pb-[75%] overflow-hidden">
+                        <img src="${design.image}" alt="${design.title}" class="absolute h-full w-full object-cover">
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-lg">${design.title}</h3>
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${design.price > 0 ? '₹' + design.price.toFixed(0) : 'FREE'}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">${design.description}</p>
+                        <div class="flex justify-between items-center text-sm">
+                            <div class="flex items-center text-yellow-500">
+                                <i class="fas fa-star"></i>
+                                <span class="ml-1 text-gray-700">${design.rating}</span>
+                            </div>
+                            <div class="text-gray-500">
+                                <i class="fas fa-download mr-1"></i>
+                                ${design.downloads}
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <button class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Details</button>
+                            <button class="w-10 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition flex items-center justify-center">
+                                <i class="fas fa-shopping-cart"></i>
+                            </button>
+                            <button class="w-10 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center justify-center print-btn" 
+                                    title="Get this printed" data-design="${design.id}">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                featuredDesignsContainer.appendChild(designCard);
+            });
+
+            // Add event listeners to print buttons
+            document.querySelectorAll('.print-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (!designsDatabase.currentUser) {
+                        showLoginModal();
+                        return;
+                    }
+                    const designId = e.currentTarget.getAttribute('data-design');
+                    const design = designsDatabase.designs.find(d => d.id == designId);
+                    if (design) {
+                        alert(`Print request sent for: ${design.title}\nOur printing service will contact you shortly!`);
+                    }
+                });
+            });
+
+            if (displayedDesignCount >= filterDesigns().length) {
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.classList.add('opacity-50');
+                loadMoreBtn.textContent = 'No More Designs';
+            } else {
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.classList.remove('opacity-50');
+                loadMoreBtn.textContent = 'Load More Designs';
+            }
+        }
+
+        function showUploadModal() {
+            loginModal.classList.remove('modal-visible');
+            loginModal.classList.add('modal-hidden');
+            registerModal.classList.remove('modal-visible');
+            registerModal.classList.add('modal-hidden');
+            
+            if (designsDatabase.currentUser) {
+                uploadModal.classList.remove('modal-hidden');
+                uploadModal.classList.add('modal-visible');
+            } else {
+                showLoginModal();
+            }
+        }
+
+        function showLoginModal() {
+            uploadModal.classList.remove('modal-visible');
+            uploadModal.classList.add('modal-hidden');
+            registerModal.classList.remove('modal-visible');
+            registerModal.classList.add('modal-hidden');
+            
+            loginModal.classList.remove('modal-hidden');
+            loginModal.classList.add('modal-visible');
+        }
+
+        function showRegisterModal() {
+            uploadModal.classList.remove('modal-visible');
+            uploadModal.classList.add('modal-hidden');
+            loginModal.classList.remove('modal-visible');
+            loginModal.classList.add('modal-hidden');
+            
+            registerModal.classList.remove('modal-hidden');
+            registerModal.classList.add('modal-visible');
+        }
+
+        function hideAllModals() {
+            uploadModal.classList.remove('modal-visible');
+            uploadModal.classList.add('modal-hidden');
+            loginModal.classList.remove('modal-visible');
+            loginModal.classList.add('modal-hidden');
+            registerModal.classList.remove('modal-visible');
+            registerModal.classList.add('modal-hidden');
+        }
+
+        function showSuccessToast(message) {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.textContent = message || 'Operation completed successfully!';
+            successToast.classList.remove('hidden');
+            successToast.classList.remove('translate-y-10');
+            
+            setTimeout(() => {
+                successToast.classList.add('translate-y-10');
+                setTimeout(() => {
+                    successToast.classList.add('hidden');
+                }, 300);
+            }, 3000);
+        }
+
+        function handleLogin(email, password) {
+            const result = designsDatabase.login(email, password);
+            if (result.success) {
+                showSuccessToast(`Welcome back, ${result.user.name}!`);
+                loginBtn.textContent = 'My Account';
+                hideAllModals();
+            } else {
+                alert(result.message);
+            }
+        }
+
+        function handleRegister(name, email, password) {
+            const result = designsDatabase.register(name, email, password);
+            if (result.success) {
+                showSuccessToast(`Account created successfully! Welcome, ${result.user.name}`);
+                loginBtn.textContent = 'My Account';
+                hideAllModals();
+            } else {
+                alert(result.message);
+            }
+        }
+
+        function handleDesignUpload(title, description, category, price) {
+            const newDesign = {
+                title,
+                description,
+                category,
+                price: parseFloat(price),
+                rating: (4 + Math.random()).toFixed(1),
+                downloads: Math.floor(Math.random() * 500),
+                image: `https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/dde60e54-6f09-41f7-af7a-5eeb916bc015.png`,
+                dateAdded: new Date(),
+                printable: true,
+                parametric: Math.random() > 0.5,
+                supported: Math.random() > 0.5
+            };
+            
+            const addedDesign = designsDatabase.addDesign(newDesign);
+            designsDatabase.currentUser.designs.push(addedDesign.id);
+            
+            showSuccessToast(`Design "${addedDesign.title}" uploaded successfully!`);
+            renderDesigns();
+            hideAllModals();
+        }
+
+        function updateFiltersFromUI() {
+            currentFilters = {
+                searchTerm: searchInput.value,
+                category: filterCategory.value,
+                minPrice: minPrice.value ? parseInt(minPrice.value) : 0,
+                maxPrice: maxPrice.value ? parseInt(maxPrice.value) : parseInt(priceRange.value),
+                rating: parseFloat(filterRating.value),
+                sort: filterSort.value,
+                freeOnly: filterFree.checked,
+                printable: filterPrintable.checked,
+                parametric: filterParametric.checked,
+                supported: filterSupported.checked
+            };
+        }
+
+        function updateUIfromFilters() {
+            searchInput.value = currentFilters.searchTerm;
+            filterCategory.value = currentFilters.category;
+            minPrice.value = currentFilters.minPrice || '';
+            maxPrice.value = currentFilters.maxPrice < 1000 ? currentFilters.maxPrice : '';
+            priceRange.value = currentFilters.maxPrice;
+            priceRangeValue.textContent = currentFilters.maxPrice;
+            filterRating.value = currentFilters.rating;
+            filterSort.value = currentFilters.sort;
+            filterFree.checked = currentFilters.freeOnly;
+            filterPrintable.checked = currentFilters.printable;
+            filterParametric.checked = currentFilters.parametric;
+            filterSupported.checked = currentFilters.supported;
+        }
+
+        function resetAllFilters() {
+            currentFilters = {
+                searchTerm: '',
+                category: '',
+                minPrice: 0,
+                maxPrice: 1000,
+                rating: 0,
+                sort: 'popular',
+                freeOnly: false,
+                printable: true,
+                parametric: false,
+                supported: false
+            };
+            updateUIfromFilters();
+            displayedDesignCount = 4;
+            renderDesigns();
+        }
+
+        // Navigation Elements
+        const browseLink = document.getElementById('browseLink');
+        const communityLink = document.getElementById('communityLink');
+        const resourcesLink = document.getElementById('resourcesLink');
+
+        // Event Listeners
+        browseLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelector('#featuredDesigns').scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+
+        communityLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert("Community Forum coming soon! Join our Discord community for now.");
+        });
+
+        resourcesLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert("Resources section under development. Check back for tutorials, guides and FAQs about 3D printing.");
+        });
+
+        loadMoreBtn.addEventListener('click', () => {
+            displayedDesignCount += designsPerLoad;
+            renderDesigns();
+        });
+
+        uploadBtn.addEventListener('click', showUploadModal);
+        heroUploadBtn.addEventListener('click', showUploadModal);
+        sellLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showUploadModal();
+        });
+        loginBtn.addEventListener('click', showLoginModal);
+        exploreBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: document.querySelector('#featuredDesigns').offsetTop - 20,
+                behavior: 'smooth'
+            });
+        });
+
+        closeUploadModal.addEventListener('click', hideAllModals);
+        closeLoginModal.addEventListener('click', hideAllModals);
+        closeRegisterModal.addEventListener('click', hideAllModals);
+        cancelUpload.addEventListener('click', hideAllModals);
+        cancelLogin.addEventListener('click', hideAllModals);
+        cancelRegister.addEventListener('click', hideAllModals);
+        
+        showRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRegisterModal();
+        });
+
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = document.getElementById('designTitle').value;
+            const description = document.getElementById('designDescription').value;
+            const category = document.getElementById('designCategory').value;
+            const price = document.getElementById('designPrice').value;
+            
+            handleDesignUpload(title, description, category, price);
+            uploadForm.reset();
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            handleLogin(email, password);
+            loginForm.reset();
+        });
+
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert("Passwords don't match!");
+                return;
+            }
+            
+            handleRegister(name, email, password);
+            registerForm.reset();
+        });
+
+        // Search and Filter Event Listeners
+        filterToggle.addEventListener('click', () => {
+            searchFilters.classList.toggle('expanded');
+        });
+
+        priceRange.addEventListener('input', () => {
+            priceRangeValue.textContent = priceRange.value;
+            maxPrice.value = priceRange.value === '1000' ? '' : priceRange.value;
+        });
+
+        maxPrice.addEventListener('input', () => {
+            if (maxPrice.value) {
+                priceRange.value = maxPrice.value;
+                priceRangeValue.textContent = maxPrice.value;
+            } else {
+                priceRange.value = 1000;
+                priceRangeValue.textContent = 1000;
+            }
+        });
+
+        searchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            updateFiltersFromUI();
+            displayedDesignCount = 4;
+            renderDesigns();
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFiltersFromUI();
+                displayedDesignCount = 4;
+                renderDesigns();
+            }
+        });
+
+        applyFilters.addEventListener('click', (e) => {
+            e.preventDefault();
+            updateFiltersFromUI();
+            displayedDesignCount = 4;
+            renderDesigns();
+            searchFilters.classList.remove('expanded');
+        });
+
+        resetFilters.addEventListener('click', (e) => {
+            e.preventDefault();
+            resetAllFilters();
+            searchFilters.classList.remove('expanded');
+        });
+
+        // Enhanced Chatbot Responses
+        const chatbotResponses = {
+            "greetings": {
+                response: "Hello! I'm the PrintHub assistant. How can I help you with 3D printing today?",
+                options: [
+                    "How to order prints?",
+                    "How to sell designs?",
+                    "How to create an account?",
+                    "What materials do you support?"
+                ]
+            },
+            "order": {
+                response: `To order a 3D print:
+1. Browse designs and find one you like
+2. Click the print icon (🖨️) on the design
+3. Select your preferred material, color and quantity
+4. Enter your shipping details
+5. Complete the secure checkout process
+
+Our network of printing partners will then manufacture and ship your item directly to you. Typical delivery times are 5-7 business days.`,
+                followup: "Would you like help finding a specific type of design?"
+            },
+            "sell": {
+                response: `To sell your 3D designs on PrintHub:
+1. Click "Upload Design" in the navigation
+2. Fill in details about your design (title, description, category)
+3. Set your price or mark it as free
+4. Upload your design files (STL format recommended)
+5. Submit for review (typically takes 24-48 hours)
+
+Once approved, your design will be available to the PrintHub community. You earn 80% of each sale!`,
+                followup: "Would you like to upload a design now?"
+            },
+            "account": {
+                response: `Creating a PrintHub account is easy:
+1. Click "Sign In" in the top right
+2. Select "Sign up" below the login form
+3. Enter your name, email and password
+4. Agree to our Terms of Service
+5. Click "Create Account"
+
+With an account you can:
+- Purchase and download designs
+- Sell your own creations
+- Save favorite designs
+- Get printing services`,
+                followup: "Would you like me to open the registration form for you?"
+            },
+            "materials": {
+                response: `We support printing with these materials:
+- PLA: Best for beginners, biodegradable, wide color selection
+- ABS: Stronger than PLA, needs ventilation when printing
+- PETG: Durable and food-safe, good for functional parts
+- TPU: Flexible rubber-like material
+- Resin: High-detail for miniatures and jewelry
+- Nylon: Strong and durable for mechanical parts
+
+When ordering, you can specify your material preference.`,
+                followup: "Need help choosing the right material for your project?"
+            },
+            "help": {
+                response: "I can help you with:\n- Finding 3D models\n- Ordering prints\n- Selling your designs\n- Account questions\n- Printing materials\n- Troubleshooting",
+                options: [
+                    "Browse popular designs",
+                    "How to measure for prints",
+                    "Contact support"
+                ]
+            },
+            "default": {
+                response: "I'm the PrintHub assistant. Here are some things I can help with:",
+                options: [
+                    "How to order prints",
+                    "How to sell designs",
+                    "Create an account",
+                    "Supported materials"
+                ]
+            }
+        };
+
+        function getChatbotResponse(question) {
+            question = question.toLowerCase();
+            
+            if (question.includes('hello') || question.includes('hi') || question.includes('hey')) {
+                return chatbotResponses.greetings;
+            }
+            if (question.includes('order') || question.includes('buy') || question.includes('purchase')) {
+                return chatbotResponses.order;
+            }
+            if (question.includes('sell') || question.includes('upload') || question.includes('creator')) {
+                return chatbotResponses.sell;
+            }
+            if (question.includes('account') || question.includes('register') || question.includes('sign up')) {
+                return chatbotResponses.account;
+            }
+            if (question.includes('material') || question.includes('filament') || question.includes('pla') || question.includes('abs')) {
+                return chatbotResponses.materials;
+            }
+            if (question.includes('help') || question.includes('support') || question.includes('problem')) {
+                return chatbotResponses.help;
+            }
+            return chatbotResponses.default;
+        }
+
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `mb-3 ${isUser ? 'ml-auto' : 'mr-auto'}`;
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = `p-3 rounded-lg max-w-xs ${isUser ? 'bg-blue-600 text-white' : 'bg-gray-100'}`;
+            messageContent.textContent = text;
+            messageDiv.appendChild(messageContent);
+            
+            chatbotMessages.appendChild(messageDiv);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+
+        function addOptions(options) {
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'flex flex-wrap gap-2 mt-2';
+            
+            options.forEach(option => {
+                const optionBtn = document.createElement('button');
+                optionBtn.className = 'text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded';
+                optionBtn.textContent = option;
+                optionBtn.addEventListener('click', () => {
+                    chatbotInput.value = option;
+                    chatbotForm.dispatchEvent(new Event('submit'));
+                });
+                optionsDiv.appendChild(optionBtn);
+            });
+            
+            const lastMessage = chatbotMessages.lastChild;
+            lastMessage.appendChild(optionsDiv);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+
+        // Chatbot Event Listeners
+        chatbotBtn.addEventListener('click', () => {
+            chatbotModal.classList.toggle('hidden');
+        });
+
+        closeChatbot.addEventListener('click', () => {
+            chatbotModal.classList.add('hidden');
+        });
+
+        chatbotForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const question = chatbotInput.value.trim();
+            if (question) {
+                addMessage(question, true);
+                setTimeout(() => {
+                    const response = getChatbotResponse(question);
+                    addMessage(response.response);
+                    
+                    if (response.options) {
+                        addOptions(response.options);
+                    }
+                    
+                    // Handle follow-up actions
+                    if (response.followup) {
+                        setTimeout(() => {
+                            addMessage(response.followup);
+                            if (question.includes('upload')) {
+                                addOptions(['Yes, open upload form', 'Not now']);
+                            } else if (question.includes('account')) {
+                                addOptions(['Yes, please', 'Maybe later']);
+                            }
+                        }, 1000);
+                    }
+                }, 500);
+                chatbotInput.value = '';
+            }
+        });
+
+        // Initialize
+        renderDesigns();
+        addMessage(chatbotResponses.greetings.response);
+        addOptions(chatbotResponses.greetings.options);
+    </script>
+</body>
+</html>
